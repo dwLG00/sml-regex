@@ -24,6 +24,15 @@ val rec shift : (bool * Regex * char) -> Regex =
       | (m, AND (p, q), c) => AND (shift (m, p, c), shift (((m andalso empty p) orelse final p), q, c))
       | (m, STAR r, c) => STAR (shift (m orelse final r, r, c))
 
+(* shift_wrap(2) - shifts by an entire list char *)
+fun shift_wrap r [] = r
+  | shift_wrap r (c::cs) = shift_wrap (shift (false, r, c)) cs
+
+(* re_match(2) - returns whether given string matches regex pattern *)
+fun re_match r [] = empty r
+  | re_match r (c::[]) = final (shift (true, r, c))
+  | re_match r (c::cs) = final (shift_wrap (shift (true, r, c)) cs)
+
 (* parsing helper functions - list of regex to OR-chains and AND-chains *)
 fun reduce_or ([]) = EMPTY
   | reduce_or (r::[]) = r
@@ -62,11 +71,27 @@ fun display EMPTY = "[empty]"
     )
 
 (* parse_display_string(1) - wraps display *)
-fun parse_display_string str = display (parse (EMPTY, String.explode str))
+fun parse_display_string str = display (parse (String.explode str))
+
+val test_string_false = "aaccbbc"
+val test_string_true = "accbcaacba"
 
 fun main () =
     case TextIO.inputLine TextIO.stdIn of
-        SOME s => print (parse_display_string s)
+        SOME s =>
+            let val regex = parse (String.explode s) in
+                print ((display regex) ^ "\n");
+                print ("Matching " ^ test_string_true ^ "...\n");
+                (if (re_match regex (String.explode test_string_true)) then
+                    print "Matched! (Correct)\n"
+                else
+                    print "Didn't match! (Incorrect)\n");
+                print ("Matching " ^ test_string_false ^ "...\n");
+                (if (re_match regex (String.explode test_string_false)) then
+                    print "Matched! (Incorrect)\n"
+                else
+                    print "Didn't match! (Correct)\n")
+            end
       | NONE => print "no input detected, exiting..."
 
 
