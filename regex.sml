@@ -33,6 +33,18 @@ fun re_match r [] = empty r
   | re_match r (c::[]) = final (shift (true, r, c))
   | re_match r (c::cs) = final (shift_wrap (shift (true, r, c)) cs)
 
+fun re_find_aux r [] i = NONE
+  | re_find_aux r (c::cs) i = if re_match r (c::cs) then (SOME i) else (re_find_aux r cs (i+1))
+
+(* re_find(2) - returns first match, or -1 if doesn't exist *)
+fun re_find r cs =
+    let
+        fun re_find_aux re [] i = NONE
+          | re_find_aux re (d::ds) i = if re_match r (d::ds) then (SOME i) else re_find_aux re ds (i+1)
+    in
+        re_find_aux r cs 0
+    end
+
 (* parsing helper functions - list of regex to OR-chains and AND-chains *)
 fun reduce_or ([]) = EMPTY
   | reduce_or (r::[]) = r
