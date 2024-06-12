@@ -110,6 +110,7 @@ fun display EMPTY = "[empty]"
 (* parse_display_string(1) - wraps display *)
 fun parse_display_string str = display (parse (String.explode str))
 
+(*
 val test_string_false = "aaccbbc"
 val test_string_true = "accbcaacba"
 val regex_string = "((a|b)*c(a|b)*c)*(a|b)*"
@@ -128,5 +129,26 @@ fun main () =
             print "Matched! (Incorrect)\n"
         else
             print "Didn't match! (Correct)\n");
+*)
+
+fun list_len li =
+    let
+        fun list_len_aux [] i = i
+          | list_len_aux (l::li) i = list_len_aux li (i+1)
+    in
+        list_len_aux li 0
+    end
+
+val regex_string = "(a|b)*c(a|b)*" (* matches all strings with a single c and (possibly) multiple a/bs on either side *)
+val regex = parse (String.explode regex_string)
+
+fun display_loop () =
+    case TextIO.inputLine TextIO.stdIn of
+        SOME s => (print ("Found " ^ (Int.toString (list_len (re_find_all regex (String.explode s)))) ^ " matches\n"); display_loop ())
+      | NONE => print "Exiting..\n"
+
+fun main () =
+    (print ("Using regex expression " ^ (display regex) ^ "\n");
+    display_loop ())
 
 val _ = main ()
