@@ -1,6 +1,9 @@
+(* Most code "taken" from https://sebfisch.github.io/haskell-regexp/regexp-play.pdf *)
 
+(* Datatypes *)
 datatype Regex = EMPTY | CHAR of (char * bool) | OR of (Regex * Regex) | AND of (Regex * Regex) | STAR of Regex
 
+(* Aux functions for use in shift(3) *)
 fun empty EMPTY = true
   | empty (CHAR _) = false
   | empty (OR (p, q)) = empty p orelse empty q
@@ -13,6 +16,7 @@ fun final EMPTY = false
   | final (AND (p, q)) = (final p andalso empty q) orelse final q
   | final (STAR r) = final r
 
+(* shift(3) - shifts markers of regex according to found character *)
 val rec shift : (bool * Regex * char) -> Regex =
     fn (_, EMPTY, _) => EMPTY
       | (m, CHAR (x, _), c) => CHAR (x, m andalso (x = c))
@@ -20,6 +24,7 @@ val rec shift : (bool * Regex * char) -> Regex =
       | (m, AND (p, q), c) => AND (shift (m, p, c), shift (((m andalso empty p) orelse final p), q, c))
       | (m, STAR r, c) => STAR (shift (m orelse final r, r, c))
 
+(* parsing helper functions - list of regex to OR-chains and AND-chains *)
 fun reduce_or ([]) = EMPTY
   | reduce_or (r::[]) = r
   | reduce_or (r::rest) = OR (reduce_or rest, r)
@@ -28,7 +33,8 @@ fun reduce_and ([]) = EMPTY
   | reduce_and (r::[]) = r
   | reduce_and (r::rest) = AND (reduce_and rest, r)
 
-fun parse (regex, char_list) =
+(* parse(1) - parses a list char into a regex tree *)
+fun parse (char_list) =
     let fun parse_helper (regex, [], cps, ps, [cands]) = reduce_and (regex::cands)
       | parse_helper (regex, #"*"::rest, cps, ps, ands) = parse_helper (STAR regex, rest, cps, ps, ands)
       | parse_helper (EMPTY, #"("::rest, cps, ps, ands) = parse_helper (EMPTY, rest, [], cps::ps, []::ands)
@@ -42,9 +48,10 @@ fun parse (regex, char_list) =
       | parse_helper (regex, c::rest, cps, ps, cands::ands) = parse_helper (CHAR (c, false), rest, cps, ps, (regex::cands)::ands)
       | parse_helper (_, _, _, _, _) = EMPTY
     in
-        parse_helper (regex, char_list, [], [], [[]])
+        parse_helper (EMPTY, char_list, [], [], [[]])
     end
 
+(* display(1) - returns string representation of regex tree *)
 fun display EMPTY = "[empty]"
   | display (CHAR (x, _)) = Char.toString x
   | display (AND (p, q)) = display p ^ display q
@@ -54,6 +61,7 @@ fun display EMPTY = "[empty]"
       | _ => display r ^ "*"
     )
 
+(* parse_display_string(1) - wraps display *)
 fun parse_display_string str = display (parse (EMPTY, String.explode str))
 
 fun main () =
