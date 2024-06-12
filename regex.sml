@@ -33,16 +33,41 @@ fun re_match r [] = empty r
   | re_match r (c::[]) = final (shift (true, r, c))
   | re_match r (c::cs) = final (shift_wrap (shift (true, r, c)) cs)
 
+(* matching aux functions *)
 fun re_find_aux r [] i = NONE
   | re_find_aux r (c::cs) i = if re_match r (c::cs) then (SOME i) else (re_find_aux r cs (i+1))
+
+(* re_match_with_end(2) - returns the last index of regex pattern match *)
+fun re_match_end_aux r [] i start = if empty r then (SOME i) else NONE
+  | re_match_end_aux r (c::cs) i start = if start 
+    then
+        (if final (shift (true, r, c)) then (SOME i) else re_match_end_aux r cs (i+1) false)
+    else
+        (if final (shift (false, r, c)) then (SOME i) else re_match_end_aux r cs (i+1) false)
 
 (* re_find(2) - returns first match, or -1 if doesn't exist *)
 fun re_find r cs =
     let
         fun re_find_aux re [] i = NONE
-          | re_find_aux re (d::ds) i = if re_match r (d::ds) then (SOME i) else re_find_aux re ds (i+1)
+          | re_find_aux re (d::ds) i = case (re_match_end_aux r (d::ds) i true) of
+                SOME j => SOME i
+              | NONE => re_find_aux re ds (i+1)
     in
         re_find_aux r cs 0
+    end
+
+(* re_find_all(2) - returns a list of all matches *)
+fun re_find_all r cs =
+    let
+        fun forwards_n n [] = []
+          | forwards_n 0 cs = cs
+          | forwards_n n (c::cs) = forwards_n (n-1) cs
+        fun re_find_all_aux re [] i matches = matches
+          | re_find_all_aux re (d::ds) i matches = case (re_match_end_aux r (d::ds) i true) of
+                SOME j => re_find_all_aux re (forwards_n (j-i) ds) (j+1) ((i, j)::matches)
+              | NONE => re_find_all_aux re ds (i+1) matches 
+    in
+        re_find_all_aux r cs 0 []
     end
 
 (* parsing helper functions - list of regex to OR-chains and AND-chains *)
