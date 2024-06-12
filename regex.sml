@@ -75,24 +75,21 @@ fun parse_display_string str = display (parse (String.explode str))
 
 val test_string_false = "aaccbbc"
 val test_string_true = "accbcaacba"
+val regex_string = "((a|b)*c(a|b)*c)*(a|b)*"
+val regex = parse (String.explode regex_string)
 
 fun main () =
-    case TextIO.inputLine TextIO.stdIn of
-        SOME s =>
-            let val regex = parse (String.explode s) in
-                print ((display regex) ^ "\n");
-                print ("Matching " ^ test_string_true ^ "...\n");
-                (if (re_match regex (String.explode test_string_true)) then
-                    print "Matched! (Correct)\n"
-                else
-                    print "Didn't match! (Incorrect)\n");
-                print ("Matching " ^ test_string_false ^ "...\n");
-                (if (re_match regex (String.explode test_string_false)) then
-                    print "Matched! (Incorrect)\n"
-                else
-                    print "Didn't match! (Correct)\n")
-            end
-      | NONE => print "no input detected, exiting..."
-
+        print "";
+        print ((display regex) ^ "\n");
+        print ("Matching " ^ test_string_true ^ "...\n");
+        (if (re_match regex (String.explode test_string_true)) then
+            print "Matched! (Correct)\n"
+        else
+            print "Didn't match! (Incorrect)\n");
+        print ("Matching " ^ test_string_false ^ "...\n");
+        (if (re_match regex (String.explode test_string_false)) then
+            print "Matched! (Incorrect)\n"
+        else
+            print "Didn't match! (Correct)\n");
 
 val _ = main ()
